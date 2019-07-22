@@ -3,11 +3,13 @@ const router = express.Router();
 const mysql = require('mysql');
 const bcrypt = require('bcryptjs');
 
-// initalize connection
-const db = mysql.createConnection({
+const Pool = require('pg').Pool;
+const db = new Pool({
+  user: 'sam',
   host: 'localhost',
-  user: 'root',
-  database: 'gurdwaradatabase'
+  database: 'gurdwaradatabase',
+  password: 'sam123',
+  port: 5432,
 });
 
 // connection to database
@@ -15,18 +17,14 @@ db.connect((err) => {
   if(err) {
     throw err;
   }
-  console.log('Mysql connected...');
+  console.log('PostgreSQL connected...');
 });
 
 // UPDATE event
 router.get('/update-event', (req, res, next) => {
-  let sql = '';
-  let i_string = '';
-  let success = false;
   for(let i = 0; i < Object.keys(req.query.array).length; i++) {
-    i_string = i.toString();
-    sql = `UPDATE events SET event = '${req.query.array[i_string].text}' WHERE id = ${Number(req.query.array[i_string].id)} `;
-    let query = db.query(sql, (err, result) => {
+    const sql = `UPDATE events SET event = '${req.query.array[i.toString()].text}' WHERE id = ${Number(req.query.array[i.toString()].id)}; `;
+    db.query(sql, (err, result) => {
       if(err) {
         throw err;
         console.log('Update Event Error...');
@@ -40,41 +38,32 @@ router.get('/update-event', (req, res, next) => {
 
 // GET all events data for displaying purposes
 router.get('/', (req, res, next) => {
-  let sql = 'SELECT * FROM events';
-  let query = db.query(sql, (err, result) => {
+  const sql = 'SELECT * FROM events;';
+  db.query(sql, (err, result) => {
     if(err) {
       throw err;
     } else {
       console.log("Calendar Data Sent...");
-      res.json(result);
+      res.json(result.rows);
     }
   });
 });
 
-// temparary password hashing for registeration
+// User Registeration
 router.post("/register", (req, res, next) => {
-  let sql_1 = `SELECT * FROM logins WHERE username='${req.query.username}'`;
-  let query_1 = db.query(sql_1, (err, result_1) => {
+  const sql_1 = `SELECT * FROM logins WHERE username='${req.query.username}';`;
+  db.query(sql_1, (err, result_1) => {
     if(err) {
       throw err;
     } else {
-      if(!(result_1.length)) {
-        let sql_2 = `INSERT INTO logins (username, passcode, loginStatus) VALUES ('${req.query.username}', '${req.query.hash}', '${0}')`;
-        let query_2 = db.query(sql_2, (err, result_2) => {
+      if(!(result_1.rows.length)) {
+        const sql_2 = `INSERT INTO logins (username, passcode, loginstatus) VALUES ('${req.query.username}', '${req.query.hash}', '${1}') RETURNING id;`;
+        db.query(sql_2, (err, result_2) => {
           if(err) {
             throw err;
-            res.json(null);
           } else {
-            console.log("New Registeration...");
-            let sql_3 = `UPDATE logins SET loginStatus = '${1}' WHERE id = ${result_2.insertId}`;
-            let query_3 = db.query(sql_3, (err, result_3) => {
-              if(err) {
-                throw err;
-              } else {
-                console.log("Authenication Successful...");
-                res.send(result_2.insertId.toString());
-              }
-            });
+            console.log("New Registeration... Authenication Successful...");
+            res.send(result_2.rows[0].id.toString());
           }
         });
       } else {
@@ -87,30 +76,33 @@ router.post("/register", (req, res, next) => {
 
 // Authenicate User
 router.get('/login', (req, res, next) => {
-  let sql_1 = `SELECT * FROM logins WHERE username='${req.query.username}'`;
-  let query_1 = db.query(sql_1, (err, result) => {
+  const sql_1 = `SELECT * FROM logins WHERE username='${req.query.username}';`;
+  db.query(sql_1, (err, result) => {
     if(err) {
       throw err;
     } else {
-      if(result.length) {
-        bcrypt.compare(req.query.password, result[0].passcode, (err, p_result) => {
+      if(result.rows.length) {
+        // change to compare two hashs
+        bcrypt.compare(req.query.password, result.rows[0].passcode, (err, p_result) => {
           if(p_result) {
-            let sql_2 = `UPDATE logins SET loginStatus = '${1}' WHERE id = ${result[0].id}`;
-            let query_2 = db.query(sql_2, (err, result_2) => {
+            const sql_2 = `UPDATE logins SET loginStatus = '${1}' WHERE id = ${result.rows[0].id};`;
+            db.query(sql_2, (err, result_2) => {
               if(err) {
                 throw err;
               } else {
                 console.log("Authenication Successful...");
-                res.send(result[0].id.toString());
+                res.send(result.rows[0].id.toString());
               }
             });
           } else {
             console.log("Authenication Failed...");
+            throw err;
             res.json(null);
           }
         });
       } else {
         console.log("Authenication Failed...");
+        throw err;
         res.json(null);
       }
     }
@@ -119,16 +111,15 @@ router.get('/login', (req, res, next) => {
 
 // CHECK is a user is signed in or not
 router.get('/login-status', (req, res, next) => {
-  let sql = `SELECT * FROM logins WHERE id=${req.query.id}`;
-  let query = db.query(sql, (err, result) => {
+  const sql = `SELECT * FROM logins WHERE id=${req.query.id};`;
+  db.query(sql, (err, result) => {
     if(err) {
       throw err;
-      res.json(false);
     } else {
-      if(!result[0]) {
+      if(!result.rows[0]) {
         console.log("No User Signed In...");
         res.json(false);
-      } else if(result[0].loginStatus) {
+      } else if(result.rows[0].loginstatus) {
         console.log("User is currently signed in...");
         res.json(true);
       } else {
@@ -141,12 +132,12 @@ router.get('/login-status', (req, res, next) => {
 
 // Sign User out by changing login status
 router.get('/update-login-status', (req, res, next) => {
-  sql = `UPDATE logins SET loginStatus = '${0}' WHERE id = ${req.query.id} `;
-  let query = db.query(sql, (err, result) => {
+  const sql = `UPDATE logins SET loginStatus = '${0}' WHERE id = ${req.query.id};`;
+  db.query(sql, (err, result) => {
     if(err) {
       throw err;
     } else {
-      console.log("Logged out...");
+      // db.end().then(() => console.log('Logged out...'))
       res.send("User logged out.");
     }
   });

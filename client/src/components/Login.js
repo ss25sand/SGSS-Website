@@ -37,6 +37,7 @@ export class Login extends Component {
 
   // Event handler for when LOGIN button is clicked
   handleLoginClick() {
+    // Hash the password, before sending it as a query string
     // Make request to check if login exists with the entered creditials
     fetch(`/users/login?username=${this.state.username}&password=${this.state.password}`)
       .then(res => res.json())

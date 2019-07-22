@@ -10,22 +10,22 @@ import {LoginPage} from "./components/LoginPage.js";
 import {Footer} from "./components/Footer.js";
 
 export class App extends Component {
-    render() {
-        return (
-          <div>
-            <Header />
-            <BrowserRouter>
-                <Switch>
-                  <Route exact path="/home" component={HomePage} />
-                  <Route path="/about" component={AboutPage} />
-                  <Route path="/project" component={ProjectPage} />
-                  <Route path="/schedule" component={SchedulePage} />
-                  <Route path="/login" component={LoginPage} />
-                  <Redirect from="/" to="/home" />
-                </Switch>
-              </BrowserRouter>
-              <Footer />
-            </div>
-        );
-    }
+  render() {
+    return (
+      <div>
+        <Header />
+        <BrowserRouter>
+            <Switch>
+              <Route exact path="/home" component={HomePage} />
+              <Route path="/about" component={AboutPage} />
+              <Route path="/project" component={ProjectPage} />
+              <Route path="/schedule" component={SchedulePage} />
+              <Route path="/login" component={LoginPage} />
+              <Redirect from="/" to="/home" />
+            </Switch>
+        </BrowserRouter>
+        <Footer />
+      </div>
+    );
+  }
 }
