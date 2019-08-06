@@ -40,7 +40,7 @@ If you don't already have postgresql installed run:
 ```
 brew install postgres
 ```
-To start PostgreSQL server, run `brew services start postgresql` if on mac or `pg_ctl -D /home/linuxbrew/.linuxbrew/var/postgres start` if on linux.
+To start PostgreSQL server, run `brew services start postgresql` if on mac or `pg_ctl -D /home/linuxbrew/.linuxbrew/var/postgres start` if on linux. <br/><br/>
 To start root postgres user session:
 ```
 psql postgres
@@ -77,8 +77,8 @@ Once done working, terminate all running commands including frontend and backend
 
 ### Useful PostgreSQL commands
 
-Display connection status: `\conninfo`
-List all roles: `\du`
-Quit current session: `\q`
-Lists databases: `\list`
+Display connection status: `\conninfo` <br/>
+List all roles: `\du` <br/>
+Quit current session: `\q` <br/>
+Lists databases: `\list` <br/>
 Lists all tables and schemas in database: `\dt`
